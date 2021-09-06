@@ -9,8 +9,9 @@ Easily index your ActiveRecord models in Algolia.
 - small feature footprint
 - sane defaults
 - advanced behaviors are easy to implement:
-  - index one model in multiple indexes
-  - split one model in multiple records
+  - [index one model in multiple indexes](#connect-your-models)
+  - [split one model in multiple records](#create-your-serializers)
+  - [disable indexing of a record based on custom logic](#disable-indexing-for-a-record)
 
 ## Installation
 Add the gem to your application's Gemfile with:
@@ -72,13 +73,27 @@ They will be set whenever you reindex your model, using the Ruby client (`#set_s
 
 ### Create your serializers
 
-The serializers receive an ActiveRecord instance and serialize it for indexing.
+Before indexing your record, it will be serialized based on the following rules, and your custom Serializer.
+
+The following default attributes will always be present in your indexed record:
+
+```rb
+{
+  objectID: algolia_object_id, # e.g. "Product#514" (or "Product#514/1" if you split your model)
+  model_name: model_name,      # e.g. "Product"
+  model_id: algolia_model_id   # e.g. "Product#514"
+}
+```
+
+You can override `#algolia_object_tid` and/or `#algolia_object_id` in your model to customize these values if needed.
+
+Then, your serializers receive an ActiveRecord instance and serialize it for indexing.
 
 They are located in `app/serializers/indexing`.
 
-They have at least one method: `#record`, that returns a Hash.
+They must have at least one method: `#record`, that returns a Hash.
 
-If you want to split your ActiveRecord into multiple Algolia record, you must provide another method: `#records`, that returns an Array.
+If you want to split your ActiveRecord into multiple Algolia records, you must provide another method: `#records`, that returns an Array.
 
 ```rb
 # app/serializers/indexing/product_serializer.rb
@@ -114,7 +129,7 @@ end
 
 ### Connect your models
 
-To make a model indexable, you have to include de `AlgoliaIndexable` concern, then call `#algolia_index_in` with the Index class and the Serializer class to use.
+To make a model indexable, you have to include the `AlgoliaIndexable` concern, then call `#algolia_index_in` with the Index class and the Serializer class to use.
 
 ```rb
 # app/models/product.rb
